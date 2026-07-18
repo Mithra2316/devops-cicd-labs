@@ -12,12 +12,17 @@ jobs:
     - name: Checkout Repository Code
       uses: actions/checkout@v4
 
-    - name: Build Docker Image
-      run: |
-        docker build -t devops-cicd-labs-image:latest .
-        echo "🎉 Docker image verification passed!"
+    # NEW STEP: Securely copy all project files from GitHub over to your AWS EC2 server
+    - name: Copy Files to AWS EC2
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: 100.53.42.211
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_KEY }}
+        source: "."
+        target: "~/app"
 
-    # Connects to your AWS instance using the secret key we just saved
+    # Connect to the server, build your custom image, and run it
     - name: Deploy to AWS EC2 via SSH
       uses: appleboy/ssh-action@v1.0.3
       with:
@@ -25,11 +30,14 @@ jobs:
         username: ubuntu
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
-          mkdir -p ~/app
+          cd ~/app
           
-          # Tear down old instances of the container to prevent port clashing
+          # Clean up any old, broken attempts to free up port 80
           sudo docker stop devops-cicd-container || true
           sudo docker rm devops-cicd-container || true
           
-          # Launch a live web container on the default web port 80
+          # Build your real project image using the files we just copied over
+          sudo docker build -t devops-cicd-labs-image:latest .
+          
+          # Spin up your personal custom container live on port 80
           sudo docker run -d -p 80:80 --name devops-cicd-container devops-cicd-labs-image:latest
