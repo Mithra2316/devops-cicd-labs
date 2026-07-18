@@ -32,4 +32,4 @@ jobs:
           sudo docker rm devops-cicd-container || true
           
           # Launch a live web container on the default web port 80
-          sudo docker run -d -p 80:80 --name devops-cicd-container nginx:alpine
+          sudo docker run -d -p 80:80 --name devops-cicd-container devops-cicd-labs-image:latest
